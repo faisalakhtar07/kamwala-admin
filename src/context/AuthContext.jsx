@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { adminLogin } from '../api/auth';
 import { getToken, setToken, clearToken } from '../api/client';
+import { enablePushNotifications, disablePushNotifications } from '../utils/push';
 
 const AuthContext = createContext(null);
 
@@ -17,6 +18,9 @@ export function AuthProvider({ children }) {
     if (token && cachedAdmin) {
       try {
         setAdmin(JSON.parse(cachedAdmin));
+        // Silently (re)register this device for real push notifications -
+        // e.g. after a page reload with an already-logged-in session.
+        enablePushNotifications();
       } catch {
         clearToken();
       }
@@ -29,10 +33,12 @@ export function AuthProvider({ children }) {
     setToken(data.token);
     localStorage.setItem('kamwala_admin_profile', JSON.stringify(data.admin));
     setAdmin(data.admin);
+    enablePushNotifications();
     return data;
   }, []);
 
   const logout = useCallback(() => {
+    disablePushNotifications();
     clearToken();
     localStorage.removeItem('kamwala_admin_profile');
     setAdmin(null);
